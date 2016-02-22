@@ -1,0 +1,12 @@
+{application, scout_probe,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { scout_probe_app, []}},
+  {env, []}
+ ]}.

@@ -1,0 +1,39 @@
+@media only screen and (min-width: 40.063em) { 
+  .im-fixed {
+    position:fixed;
+    height:100%; 
+	width:30%;
+	vertical-align: middle;
+	background: url(http://gallery.pub.goha.ru/gals/news/2015/01/22/eveonline/norm/fc0238aa0cb8b484f39dd6bf12a24042.jpg)
+  }
+
+  div.top-bar {
+	text-align:center;
+  }
+	ul.menu {
+	display: inline-block;
+	}
+  .not-fixed {
+    width:70%;
+    margin-left:30%
+  }
+}
+
+
+.valign-middle {
+    display: table;
+}
+
+.valign-middle .columns {
+    display: table-cell;
+    vertical-align: middle;
+}
+
+.valign-middle .columns,
+.valign-middle [class*="column"] + [class*="column"]:last-child {
+    float: none;
+}
+
+.small-login{
+	 margin-left:5%
+}

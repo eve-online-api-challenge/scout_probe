@@ -1,0 +1,180 @@
+<!--
+
+%%%-------------------------------------------------------------------
+%%% Copyright © 2016 Redpate
+%%%
+%%% Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+%%%
+%%% The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+%%%
+%%% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+%%%-------------------------------------------------------------------
+
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Foundation | Welcome</title>
+    <link rel="stylesheet" href="css/foundation.css" />
+    <link rel="stylesheet" href="css/app.css" />
+	<link rel="stylesheet" href="owl-carousel/owl.carousel.css">
+	<link rel="stylesheet" href="owl-carousel/owl.theme.css">
+  </head>
+  <body>
+		<div  class="im-fixed row valign-middle">
+		  <div class="large-4 columns">
+
+				<div class="text-center">
+					<h2>Welcome, {{ name }}!</h3>
+					<p class="lead">Tracking course: crest</p>
+					<p class="lead">This servise created to find pvp target(s) to you.</p>
+					<a href="/" onclick="websocket.send('S');" class="button large">Stop Tracking</a>
+
+				</div>
+			</div>
+		</div>
+
+	<div class="not-fixed">
+
+			<div class="top-bar" style="width:100%">
+				<ul class="medium-horizontal menu">
+					<li><a href="#" onclick="jump(0)">About</a></li>
+					<li><a href="#" onclick="jump(1)">Tracker</a></li>
+					<li><a href="#" onclick="jump(2)">SOV</a></li>
+					<li class="small-login show-for-small-only"><a href="#" onclick="jump(2)"><img alt="EVE SSO Login Buttons Small White" src="https://images.contentful.com/idjq7aai9ylm/18BxKSXCymyqY4QKo8KwKe/c2bdded6118472dd587c8107f24104d7/EVE_SSO_Login_Buttons_Small_White.png?w=195&amp;h=30"></a></li>
+
+				</ul>
+			</div>
+			<div id="owl-example" class="owl-carousel">
+				<div>
+					<div class="callout large">
+					<h1>Welcome!</h1>
+					<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor.</p>
+					</div>
+				</div>
+				<div>
+					<div class="callout large">
+					<h4>Latest events</h4>
+					<table id="events">
+					  <thead>
+						<tr>
+						  <th width="200">Location</th>
+						  <th>Event description / link</th>
+						  <th width="150">Time</th>
+						  <th width="150">Actions</th>
+						</tr>
+					  </thead>
+					  <tbody>
+					  </tbody>
+					</table>
+					</div>
+				</div>
+				  <div><div class="callout large">
+						<div id="staging" class="row">
+						<div class="large-12 columns">
+						<h4>Staging systems:</h4><hr>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						</div>
+
+						<div id="upcoming" class="row">
+						<div class="large-12 columns">
+						<h4>Upcoming timers:</h4><hr>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						</div>
+							<div id="active" class="row">
+						<div class="large-12 columns">
+						<h4>Active timers:</h4><hr>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						<div class="large-3 small-6 columns">
+						<img src="http://placehold.it/500x500&text=Thumbnail">
+						<div class="panel">
+						<p>Description</p>
+						</div>
+						</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		  </div>
+		</div>
+	</div>
+
+
+    <script src="js/vendor/jquery.min.js"></script>
+    <script src="js/vendor/what-input.min.js"></script>
+    <script src="js/foundation.min.js"></script>
+    <script src="owl-carousel/owl.carousel.min.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/ws.js"></script>
+  </body>
+</html>
