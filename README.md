@@ -17,7 +17,7 @@ Created for [The EVE Online API Challenge].
 [0.0.1v].
 
 ### Usage
-
+get [sqlite SDE], unpack
 get dependencies, compile, run shell
 ```sh
 $ ./rebar get-deps
@@ -66,6 +66,7 @@ License
 
 MIT
 
+[sqlite SDE]: <https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2>
 [0.0.1v]: <http://46.101.130.93/>
 [The EVE Online API Challenge]:<http://community.eveonline.com/news/dev-blogs/the-eve-online-api-challenge-1/>
 
