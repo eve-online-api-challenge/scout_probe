@@ -33,8 +33,10 @@ Like any app based on erlang, Scout Probe has several modules:
 
 * tracker - used to track user througth new eden
 * router - spawned by router_sup for routing all events
-* Google Drive
-* OneDrive
+* *_handler - cowboy request handlers
+* crest - pure api for crest
+* pub_crest - pure api for public crest
+* sov - store and give information about soverenity
 
 ### Documentation
 Due to time limit, there is no documentation yet. You can read sources. 
