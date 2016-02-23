@@ -163,6 +163,7 @@ send(ID,Msg)->
 	PID = tracker_sup:get_pid(ID),
 	case PID of
 		undefined->
+			tracker_sup:del(ID),
 			{error, badarg};
 		_->PID ! Msg
 	end.
