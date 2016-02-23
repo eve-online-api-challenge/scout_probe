@@ -65,7 +65,7 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 											{id, list_to_binary(integer_to_list(Event#event.id))},
 											{text, list_to_binary(Event#event.text)},
 											{time, list_to_binary(Event#event.time)},
-											{system, pub_crest:req(io_lib:format("/solarsystems/~s/",[Event#event.system]))} %% todo - use sqlite
+											{system, crest_cache:req(io_lib:format("/solarsystems/~s/",[Event#event.system]))} %% todo - use sqlite
 										]})})
 								end	end, router:apply(call,SolarSystemID, events)), %% all cached killmails in your face!
 								lists:foreach(fun({ID,_Time})->
@@ -112,7 +112,7 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 									{id, list_to_binary(integer_to_list(Event#event.id))},
 									{text, list_to_binary(Event#event.text)},
 									{time, list_to_binary(Event#event.time)},
-									{system, pub_crest:req(io_lib:format("/solarsystems/~s/",[Event#event.system]))} %% todo - use sqlite
+									{system, crest_cache:req(io_lib:format("/solarsystems/~s/",[Event#event.system]))} %% todo - use sqlite
 								]})}),
 							loop(VerifiedRecord)
 					end;

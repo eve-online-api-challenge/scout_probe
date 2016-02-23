@@ -25,6 +25,7 @@
 -define(CREST_SERVER,"crest-tq.eveonline.com").
 -define(CREST_AUTH,"https://login.eveonline.com").
 -define(PUBLIC_CREST_HOST,"https://public-crest.eveonline.com").
+-define(PUBLIC_CREST_HOST_BIN,list_to_binary(?PUBLIC_CREST_HOST)).
 -define(CREST_HOST,"https://crest-tq.eveonline.com").
 -define(REDIRECT_URL,"http://46.101.130.93/auth").
 -define(APPLICATION_ID,"63d0893565704c8a9395240959132df5"). %% client id from https://developers.eveonline.com
