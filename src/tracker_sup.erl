@@ -58,6 +58,6 @@ del(ID)->
 get_pid(Id)->
 	Res = lists:keyfind(Id, 1,supervisor:which_children(?MODULE)),
 	case Res of
-		{Id, Child, _Type, _Modules}-> Child;
+		{Id, Child, _Type, _Modules}->Child;
 		_->undefined
 	end.

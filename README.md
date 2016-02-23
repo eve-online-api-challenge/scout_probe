@@ -18,6 +18,7 @@ Created for [The EVE Online API Challenge].
 
 ### Usage
 get [sqlite SDE], unpack
+
 get dependencies, compile, run shell
 ```sh
 $ ./rebar get-deps
