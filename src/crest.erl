@@ -37,7 +37,7 @@
 
 auth(Code)-> %% used in page generator process. so let it crash!
 	{ok,{{_,200,_}, _Headers, Body}} = httpc:request(post,
-	    {"https://login.eveonline.com/oauth/token", [{"Authorization" , ?AUTH}],
+	    {?CREST_AUTH++"/oauth/token", [{"Authorization" , ?AUTH}],
 	    "application/x-www-form-urlencoded",
 	    list_to_binary(io_lib:format("grant_type=authorization_code&code=~s",[Code]))
 	    }, [], []),
@@ -58,7 +58,7 @@ auth(Code)-> %% used in page generator process. so let it crash!
 	%%--------------------------------------------------------------------
 obtain_character_id(#crest{}=Crest)->%% used in page generator process. so let it crash!
 	{ok,{{_,200,_}, _Headers, Body}} = httpc:request(get,
-		  {"https://login.eveonline.com/oauth/verify",
+		  {?CREST_AUTH++"/oauth/verify",
 		    [{"Authorization" ,
 		  		io_lib:format("~s ~s", [Crest#crest.token_type, Crest#crest.access_token])
 	    	}]
@@ -77,7 +77,8 @@ obtain_character_id(#crest{}=Crest)->%% used in page generator process. so let i
 	%% @spec req(#crest{}, ReqType, URL, ReqBody)-> {#crest{}, Result}
 	%% @end
 	%%--------------------------------------------------------------------
-req(#crest{}=Crest, get, URL, _)-> % few error to catch. but if there is no conection etc. - let it crash.
+req(#crest{}=Crest, get, _URL, _)-> % few error to catch. but if there is no conection etc. - let it crash.
+	URL = lists:flatten(_URL),
 	Res =httpc:request(get,
 	    {URL,
 	    	[{"Authorization" ,
@@ -91,28 +92,29 @@ req(#crest{}=Crest, get, URL, _)-> % few error to catch. but if there is no cone
 		{ok,{{_,Code,_}, _Headers, _Body}}->
 			{Crest,{Code,_Body}}
 	end;
-req(#crest{}=Crest, Method, URL, ReqBody)-> % req to private crst. few error to catch. but if there is no conection etc. - let it crash.
-		Res =httpc:request(Method,
-		    {URL,
-		    	[{"Authorization" ,
-		    		io_lib:format("~s ~s", [Crest#crest.token_type, Crest#crest.access_token])
-		    	}], "application/json",ReqBody
-		    }, [], []),
-		case Res of
-			{ok,{{_,200,_}, _Headers, Body}}->
-				Result = try jiffy:decode(Body) of
-						Succses->
-							Succses
-					catch
-						_Error->
-							Body
-					end,
-				{Crest,Result};
-			{ok,{{_,401,_}, _Headers, _Body}}->
-				req(update_token(Crest),Method,URL,ReqBody);
-			{ok,{{_,Code,_}, _Headers, _Body}}->
-				{Crest,{Code,_Body}}
-		end.
+req(#crest{}=Crest, Method, _URL, ReqBody)-> % req to private crst. few error to catch. but if there is no conection etc. - let it crash.
+	URL = lists:flatten(_URL),
+	Res =httpc:request(Method,
+	    {URL,
+	    	[{"Authorization" ,
+	    		io_lib:format("~s ~s", [Crest#crest.token_type, Crest#crest.access_token])
+	    	}], "application/json",ReqBody
+	    }, [], []),
+	case Res of
+	{ok,{{_,200,_}, _Headers, Body}}->
+		Result = try jiffy:decode(Body) of
+			Succses->
+				Succses
+		catch
+			_Error->
+				Body
+		end,
+		{Crest,Result};
+	{ok,{{_,401,_}, _Headers, _Body}}->
+		req(update_token(Crest),Method,URL,ReqBody);
+	{ok,{{_,Code,_}, _Headers, _Body}}->
+		{Crest,{Code,_Body}}
+	end.
 
 %%--------------------------------------------------------------------
 %% @doc
