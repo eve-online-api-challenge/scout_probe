@@ -35,6 +35,8 @@ start(_StartType, _StartArgs) ->
     application:start(cowlib),
     application:start(cowboy),
     erlydtl:compile("web/main.html", main_template),
+		inets:start(),
+		crest_cache:start_link(),
     Dispatch = cowboy_router:compile([
         {'_', [
             {"/", cowboy_static, {file, "web/index.html"}}, % beter to use something like nginx for static data

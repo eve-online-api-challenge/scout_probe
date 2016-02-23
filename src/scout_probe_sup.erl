@@ -37,7 +37,6 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-  inets:start(), %% should be stardet already, but let call it one more time
   sqlite3:open(?DB_NAME,[{file, "sqlite-latest.sqlite"}]), %% Static export in sqlite
   {ok, { {one_for_one, 5, 10}, [
     {km_collector, {km_collector, collector, []}, permanent, brutal_kill, worker, []}, %% collect killmails from zkillboard
