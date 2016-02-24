@@ -12,9 +12,9 @@ No https. It's prety easy to enable https at cowboy by yourself.
 Created for [The EVE Online API Challenge].
 
 ### Version
-0.0.1 - result of 2 days full of coding.
+0.0.2 - public CREST cached by ets. Less list-processing.
 ### Demo
-[0.0.1v].
+[0.0.2v].
 
 ### Usage
 get [sqlite SDE], unpack
@@ -58,8 +58,9 @@ Service is using "new" crest endpoints.
 ### Todos
 
  - Delete rudiment code
+ - Swich to maps based router state
  - More coments to code
- - Rework web template
+ - Rework web template (probably, not before 4th March)
  - Rework ws timeout.
 
 License
@@ -68,7 +69,7 @@ License
 MIT
 
 [sqlite SDE]: <https://www.fuzzwork.co.uk/dump/sqlite-latest.sqlite.bz2>
-[0.0.1v]: <http://46.101.130.93/>
+[0.0.2v]: <http://46.101.130.93/>
 [The EVE Online API Challenge]:<http://community.eveonline.com/news/dev-blogs/the-eve-online-api-challenge-1/>
 
 

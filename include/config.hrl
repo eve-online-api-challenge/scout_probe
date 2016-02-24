@@ -22,14 +22,14 @@
 -record(event,{id,tags,text,time,system,expire=erlang:monotonic_time(seconds)}).
 
 %% CREST
--define(CREST_SERVER,"crest-tq.eveonline.com").
--define(CREST_AUTH,"https://login.eveonline.com").
+%%-define(CREST_SERVER,"crest-tq.eveonline.com").
+-define(CREST_AUTH, pub_crest:get_variable(<<"authEndpoint">>)).
 -define(PUBLIC_CREST_HOST,"https://public-crest.eveonline.com").
 -define(PUBLIC_CREST_HOST_BIN,list_to_binary(?PUBLIC_CREST_HOST)).
 -define(CREST_HOST,"https://crest-tq.eveonline.com").
--define(REDIRECT_URL,""). 
+-define(REDIRECT_URL,"").
 -define(APPLICATION_ID,""). %% client id from https://developers.eveonline.com
--define(AUTH_TOKEN, ""). %% precompiled  base64:encode(ClientID, SecretKey)
+-define(AUTH_TOKEN, ""). %% precompiled  base64:encode(ClientID++":"++SecretKey)
 
 %% router chache expire time in seconds
 -define(MSG_RECORDS_TTL, 120).
