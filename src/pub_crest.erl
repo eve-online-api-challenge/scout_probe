@@ -17,7 +17,31 @@
 
 -include("config.hrl").
 
--export([req/1, req/2]).
+-export([req/1, req/2, init/1, get_variable/1]).
+
+-define(CREST_VARIABLES, crest_variables).
+
+
+init(PropList)->
+  ets:new(?CREST_VARIABLES, [named_table ,{read_concurrency, true}, public, {write_concurrency, true}]),
+  lists:foreach(fun({Key, _Value})->
+    Value = if
+      is_tuple(_Value)->
+        proplists:get_value(<<"href">>, element(1, _Value) ,<<"">>) ;
+      true->
+        _Value
+    end,
+    ets:insert_new(?CREST_VARIABLES, {Key, binary_to_list(Value)}) end,
+  PropList).
+
+get_variable(ID)->
+  Res = ets:lookup(?CREST_VARIABLES, ID),
+  case Res of
+    [] ->
+      [];
+    [{ID,Value}]-> Value
+  end.
+
 
 req(Endpoint)->
   Res =httpc:request(?PUBLIC_CREST_HOST++Endpoint),
@@ -37,10 +61,10 @@ req(Endpoint, all)->
     none->
       proplists:get_value(<<"items">>, Page, []);
     {[{<<"href">>, NextPageUrl}]}->
-      proplists:get_value(<<"items">>, Page, [])++req_dirty(binary_to_list(NextPageUrl), all)
+      req_dirty(binary_to_list(NextPageUrl), all, proplists:get_value(<<"items">>, Page, []))
   end.
 
-req_dirty(Endpoint, all)->
+req_dirty(Endpoint, all, Acc)->
   Res =httpc:request(Endpoint),
 	case Res of
 		{ok,{{_,200,_}, _Headers, Body}}->
@@ -48,10 +72,10 @@ req_dirty(Endpoint, all)->
       NextPage = proplists:get_value(<<"next">>, Page, none),
       case NextPage of
         none->
-          proplists:get_value(<<"items">>, Page, []);
+          Acc++proplists:get_value(<<"items">>, Page, []);
         {[{<<"href">>, NextPageUrl}]}->
-          proplists:get_value(<<"items">>, Page, [])++req_dirty(binary_to_list(NextPageUrl), all)
+          req_dirty(binary_to_list(NextPageUrl), all, Acc++proplists:get_value(<<"items">>, Page, []))
       end;
 		{ok,{{_,_Code,_}, _Headers, _Body}}->
-			[]
+		  Acc
 	end.

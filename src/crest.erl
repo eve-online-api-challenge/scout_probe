@@ -37,17 +37,16 @@
 
 auth(Code)-> %% used in page generator process. so let it crash!
 	{ok,{{_,200,_}, _Headers, Body}} = httpc:request(post,
-	    {?CREST_AUTH++"/oauth/token", [{"Authorization" , ?AUTH}],
+	    {?CREST_AUTH, [{"Authorization" , ?AUTH}],
 	    "application/x-www-form-urlencoded",
 	    list_to_binary(io_lib:format("grant_type=authorization_code&code=~s",[Code]))
 	    }, [], []),
-	{PropList} = jiffy:decode(Body),
-	AccessToken=proplists:get_value(<<"access_token">>,PropList,<<"">>),
-	TokenType=proplists:get_value(<<"token_type">>,PropList,<<"">>),
-	RefreshToken=proplists:get_value(<<"refresh_token">>,PropList,null),
-	ExpiresIn=proplists:get_value(<<"expires_in">>,PropList,300),
-	BaseCrestRecod = #crest{access_token=AccessToken, token_type=TokenType, expires_in=ExpiresIn, refresh_token=RefreshToken},
-	obtain_character_id(BaseCrestRecod).
+	PropList = element(1,jiffy:decode(Body)),
+	obtain_character_id(#crest{
+			access_token=proplists:get_value(<<"access_token">>,PropList,<<"">>),
+			token_type=proplists:get_value(<<"token_type">>,PropList,<<"">>),
+			expires_in=proplists:get_value(<<"expires_in">>,PropList,300),
+			refresh_token=proplists:get_value(<<"refresh_token">>,PropList,null)}).
 
 	%%--------------------------------------------------------------------
 	%% @doc
@@ -58,17 +57,16 @@ auth(Code)-> %% used in page generator process. so let it crash!
 	%%--------------------------------------------------------------------
 obtain_character_id(#crest{}=Crest)->%% used in page generator process. so let it crash!
 	{ok,{{_,200,_}, _Headers, Body}} = httpc:request(get,
-		  {?CREST_AUTH++"/oauth/verify",
+		  {?CREST_AUTH++"/../verify",
 		    [{"Authorization" ,
 		  		io_lib:format("~s ~s", [Crest#crest.token_type, Crest#crest.access_token])
 	    	}]
 	    }, [], []),
-	{PropList} = jiffy:decode(Body),
-	CharacterID=proplists:get_value(<<"CharacterID">>,PropList,0),
-	CharacterName=proplists:get_value(<<"CharacterName">>,PropList,<<"">>),
-	ExpiresOn=proplists:get_value(<<"ExpiresOn">>,PropList,0),
-	CharacterOwnerHash=proplists:get_value(<<"CharacterOwnerHash">>,PropList,<<"">>),
-	Crest#crest{character_name=CharacterName, character_id=CharacterID, expires_on=ExpiresOn, owner_hash=CharacterOwnerHash}.
+	PropList = element(1,jiffy:decode(Body)),
+	Crest#crest{character_name=proplists:get_value(<<"CharacterName">>,PropList,<<"">>),
+		character_id=proplists:get_value(<<"CharacterID">>,PropList,0),
+		expires_on=proplists:get_value(<<"ExpiresOn">>,PropList,0),
+		owner_hash=proplists:get_value(<<"CharacterOwnerHash">>,PropList,<<"">>)}.
 
 	%%--------------------------------------------------------------------
 	%% @doc
@@ -124,10 +122,10 @@ req(#crest{}=Crest, Method, _URL, ReqBody)-> % req to private crst. few error to
 %% @end
 %%--------------------------------------------------------------------
 set_waypoint(VerifiedRecord,Id,Options)->
-	crest:req(VerifiedRecord,post,io_lib:format("https://~s/characters/~p/navigation/waypoints/",[?CREST_SERVER,VerifiedRecord#crest.character_id]),
+	crest:req(VerifiedRecord,post,io_lib:format("~s/characters/~p/navigation/waypoints/",[?CREST_HOST,VerifiedRecord#crest.character_id]),
 				jiffy:encode({[{<<"solarSystem">>,
 				 {[{<<"href">>,
-						list_to_binary(io_lib:format("https://~s/solarsystems/~p/",[?CREST_SERVER, Id]))},
+						list_to_binary(io_lib:format("~s/solarsystems/~p/",[?CREST_HOST, Id]))},
 					 {<<"id">>,Id}]}},
 				{<<"first">>,lists:member(<<"first">>,Options)},
 				{<<"clearOtherWaypoints">>,lists:member(<<"clearOtherWaypoints">>,Options)}]})
@@ -142,7 +140,7 @@ set_waypoint(VerifiedRecord,Id,Options)->
 %%--------------------------------------------------------------------
 update_token(#crest{}=Crest)-> %% used in tracker proc. if it is unable to update token - let it crash.
 	{ok,{{_,200,_}, _Headers, Body}} = httpc:request(post,
-	    {?CREST_AUTH++"/oauth/token", [{"Authorization" , ?AUTH}],
+	    {?CREST_AUTH, [{"Authorization" , ?AUTH}],
 	    "application/x-www-form-urlencoded",
 	    list_to_binary(io_lib:format("grant_type=refresh_token&refresh_token=~s",[Crest#crest.refresh_token]))
 	    }, [], []),

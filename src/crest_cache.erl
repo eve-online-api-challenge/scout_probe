@@ -31,6 +31,7 @@ start_link() ->
 
 init([]) ->
   {P} = pub_crest:req("/"),
+  pub_crest:init(P),
   Cache_Schema = lists:map(fun({EndpointName, CacheTime})->
     <<?PUBLIC_CREST_HOST, EndPointPath/binary>>
       =proplists:get_value(<<"href">>,
@@ -58,7 +59,7 @@ handle_cast(_Msg, State) ->
 handle_info({flush, EndPointPath}, State) ->
   {_, TableID, TTL}=lists:keyfind(EndPointPath, 1, State),
   MS = [{{'_','_','$2'},
-        [{'>',{'-',erlang:monotonic_time(seconds),'$2'},TTL}],
+        [{'>',{'-',?SEC,'$2'},TTL}],
         [true]}],
   ets:select_delete(TableID,MS),
   {noreply, State};
