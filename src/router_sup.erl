@@ -44,7 +44,7 @@ init([]) ->
   {ok, { {simple_one_for_one, 5, 10}, [{router, {router, start_link, []}, permanent, brutal_kill, worker, []}]} }.
 
 init_map(IdList)->
-  lists:foreach(fun(ID)-> supervisor:start_child(router_sup, [ID])  end, IdList).
+  lists:foreach(fun(ID)-> {ok, PID}=supervisor:start_child(router_sup, [ID]), erlang:garbage_collect(PID)  end, IdList).
 
 clear()->
-  lists:foreach(fun({_,PID,_,_})->gen_server:cast(PID,clear),  erlang:garbage_collect(PID) end, supervisor:which_children(?MODULE)).
+  lists:foreach(fun({_,PID,_,_})->gen_server:cast(PID,clear) end, supervisor:which_children(?MODULE)).
