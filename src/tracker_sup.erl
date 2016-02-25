@@ -48,7 +48,6 @@ add(CREST)->
 del(ID)->
   case get_pid(ID) of
     undefined->
-      supervisor:terminate_child(?MODULE, ID),
       supervisor:delete_child(?MODULE, ID);
     PID->
       PID ! stop,
@@ -59,5 +58,6 @@ get_pid(Id)->
 	Res = lists:keyfind(Id, 1,supervisor:which_children(?MODULE)),
 	case Res of
 		{Id, Child, _Type, _Modules}->Child;
+		{Id, undefined, _Type, _Modules}->supervisor:delete_child(?MODULE, Id),undefined;
 		_->undefined
 	end.

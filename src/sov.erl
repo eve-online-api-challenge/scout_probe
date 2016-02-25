@@ -39,8 +39,6 @@
 %% @end
 %%--------------------------------------------------------------------
 start_link() ->
-  timer:send_interval(60000, ?MODULE, update),  % might be worst way of updating. check 1 alliance for minute
-  timer:send_interval(30000, ?MODULE, update_events),
   gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 
@@ -57,6 +55,8 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
+  timer:send_interval(60000, self(), update),  % might be worst way of updating. check 1 alliance for minute
+  timer:send_interval(30000, self(), update_events),
   Alliances = [{proplists:get_value(<<"id_str">>,Proplist), proplists:get_value(<<"name">>,Proplist)} ||
     {Proplist}<-pub_crest:req("/alliances/", all)],
   {ok,[CapDump]}=file:consult("sov.dump"), %% get initial sov, gues, no easy way to get capitals of 3000 alliances (even with 150 per sec limmit)

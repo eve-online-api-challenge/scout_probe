@@ -19,7 +19,7 @@
 -behaviour(application).
 
 %% Application callbacks
--export([start/0, start/2, stop/1]).
+-export([start/0, start/2, stop/1, dirty_reload/1]).
 
 -include("config.hrl").
 %% ===================================================================
@@ -27,6 +27,11 @@
 %% ===================================================================
 start()->
 	start([],[]).
+
+
+dirty_reload(Atom)->
+	code:purge(Atom),
+	code:load_file(Atom).
 
 start(_StartType, _StartArgs) ->
 	%% new version of cowboy have troubes with easy start
