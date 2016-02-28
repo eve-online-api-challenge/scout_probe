@@ -15,9 +15,9 @@
 %%%-------------------------------------------------------------------
 %gllobal define
 -define(SEC, erlang:system_time(seconds)).
--record(crest,{access_token, token_type, owner_hash, character_name, character_id, expires_on, location_id, location_name,
-			expires_in=300, callback, in_wh=false, last_call=0, last_update=?SEC,
-			refresh_token=null}).
+-record(crest,{access_token, token_type, owner_hash, character_name, character_id, expires_on, location_id, location_name, jumped_id, jumped_name,
+			expires_in=300, callback, in_wh=true, last_call=0, last_update=?SEC,
+			refresh_token}).
 
 -record(event,{id,tags,text,time,system,expire=erlang:monotonic_time(seconds)}).
 

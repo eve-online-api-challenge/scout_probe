@@ -36,7 +36,9 @@ init(Req, Opts) ->
             undefined->
               case tracker:get(TrackerID) of
                 {tracker,Crest}->
-                  {ok, Answer}=main_template:render([{name,Crest#crest.character_name}]),
+                  {ok, Answer}=main_template:render([{name,Crest#crest.character_name},
+										{location_name, Crest#crest.location_name },
+										{jumped_id, Crest#crest.jumped_id},{jumped_name, Crest#crest.jumped_name}]),
             	    {ok,cowboy_req:reply(200, [
             		    {<<"content-type">>, <<"text/html">>}
             	    ], Answer , Req), Opts};

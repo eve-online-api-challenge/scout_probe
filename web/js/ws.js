@@ -56,11 +56,20 @@ function connect()
     function onMessage(evt) {
 
       var o = jQuery.parseJSON( evt.data );
+      if (o.location) {
+        $('#location').text(o.location.name);
+        $('#location').attr("href", "http://evemaps.dotlan.net/system/"+o.location.name);
+      }
+      if (o.jumped_in) {
+        $('#start_point').text(o.jumped_in.name);
+        $('#start_point').attr("href", "http://evemaps.dotlan.net/system/"+o.jumped_in.name);
+        $('#start_point_w').html("<a onclick=\"websocket.send('D:"+o.jumped_in.id_str+"');\" >Set Destination</a> | <a onclick=\"websocket.send('W:"+o.jumped_in.id_str+"');\" >Set Waypoint</a>");
+      }
       if (o.msg_type==0) {
         if ($('#events > tbody>tr').length >=15) {
             $('#events > tbody>tr').last().remove();
           }
-        $("#events > tbody").prepend("<tr><td>"+o.system.name+"</td><td>"+o.text+"(<a target=\"_blank\" href=\"https://zkillboard.com/kill/"+o.id+"/\">killmail</a>)</td><td>"+o.time+"</td><td><a onclick=\"websocket.send('D:"+o.system.id_str+"');\" >Set Destination</a><a onclick=\"websocket.send('W:"+o.system.id_str+"');\" >Set Waypoint</a></td></tr>");
+        $("#events > tbody").prepend("<tr><td>"+o.system.name+"</td><td>"+o.text+"(<a target=\"_blank\" href=\"https://zkillboard.com/kill/"+o.id+"/\">killmail</a>)</td><td>"+o.time+"</td><td><a onclick=\"websocket.send('D:"+o.system.id_str+"');\" >Set Destination</a> | <a onclick=\"websocket.send('W:"+o.system.id_str+"');\" >Set Waypoint</a></td></tr>");
       } else if (o.msg_type==1){
         if (o.capital_id) { //defined staging system
            render ("staging", o);
@@ -85,10 +94,10 @@ $(document).ready(function() {
 });
 
 function timeoutLoop () {
-   setTimeout(function () {
-      websocket.send("and");
-      timeoutLoop();
-   }, 120000)
+  websocket.send("and");
+  setTimeout(function () {
+    timeoutLoop();
+  }, 120000)
 }
 
 function render (type, event){

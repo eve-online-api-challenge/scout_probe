@@ -29,8 +29,9 @@
 
 				<div class="text-center">
 					<h2>Welcome, {{ name }}!</h3>
-					<p class="lead">Tracking course: crest</p>
-					<p class="lead">This servise created to find pvp target(s) to you.</p>
+          <p class="lead">Tracking source: crest</p>
+          <p class="lead">Jumped in: <a id="start_point" href="http://evemaps.dotlan.net/system/{{ jumped_name }}"> {{ jumped_name }}</a> <p id="start_point_w"><a onclick="websocket.send('D:{{ jumped_id }}');" >Set Destination</a> | <a onclick="websocket.send('W:{{ jumped_id }}');" >Set Waypoint</a></p></p>
+          <p class="lead">Current System: <a id="location" href="http://evemaps.dotlan.net/system/{{ location_name }}"> {{ location_name }}</a></p>
 					<a href="/" onclick="websocket.send('S');" class="button large">Stop Tracking</a>
 
 				</div>

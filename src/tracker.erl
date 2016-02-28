@@ -17,8 +17,14 @@
 
 -include("config.hrl").
 
+-compile(export_all).
+
 -export([start_link/1, start/1, stop/1]).
 -export([loop/1, send/2, get/1, update/1, set_waypoint/2, set_destination/2, send_callback/2]).
+
+
+get_system_info(ID)->
+	crest_cache:req(io_lib:format("/solarsystems/~s/",[ID])).
 
 start_link(CREST)-> %% start worker
 	{ok,spawn_link(?MODULE,loop,[CREST])}.
@@ -43,16 +49,22 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 			send_callback(VerifiedRecord, stop), %% delete from supervisor, close linked ws
 			exit(normal);
 		(Now - VerifiedRecord#crest.last_call) > ?TRACKER_CREST_DELAY -> % time is up/ lets call CREST
-			{NewVerifiedRecord, Res}=crest:req(VerifiedRecord, get,  io_lib:format(?CREST_HOST++"/characters/~p/location/",[VerifiedRecord#crest.character_id]), []),
+			{_NewVerifiedRecord, Res}=crest:req(VerifiedRecord, get,  io_lib:format(?CREST_HOST++"/characters/~p/location/",[VerifiedRecord#crest.character_id]), []),
 			case Res of
 				{[{<<"solarSystem">>,{PropList}}]}-> %% found location
 					SolarSystemName=proplists:get_value(<<"name">>,PropList),
 					SolarSystemID=proplists:get_value(<<"id_str">>,PropList),
 					_SolarSystemID=proplists:get_value(<<"id">>,PropList),
 					IsWH = _SolarSystemID > 31000000,
-					if
+					NewVerifiedRecord = if
 						IsWH->%went in wh. fly safe xD
-							ok;
+							if
+								IsWH=/=VerifiedRecord#crest.in_wh-> % jumped in wh
+									send_callback(VerifiedRecord, {text, jiffy:encode({[
+											{location, <<"w-space">>}]})}), _NewVerifiedRecord;
+								true-> % still in wh
+									_NewVerifiedRecord
+							end;
 						IsWH=/=VerifiedRecord#crest.in_wh-> % jumped out wh. or just logged on. throw tons of events in this face!
 							lists:foreach(fun({ID,_Time})->
 								EventList = event_pool:get(ID),
@@ -65,7 +77,7 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 											{id, list_to_binary(integer_to_list(Event#event.id))},
 											{text, list_to_binary(Event#event.text)},
 											{time, list_to_binary(Event#event.time)},
-											{system, crest_cache:req(io_lib:format("/solarsystems/~s/",[Event#event.system]))} %% todo - use sqlite
+											{system, get_system_info(Event#event.system)} %% todo - use sqlite
 										]})})
 								end	end, router:apply(call,SolarSystemID, events)), %% all cached killmails in your face!
 								lists:foreach(fun({ID,_Time})->
@@ -84,20 +96,27 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 												})});
 										_-> ok
 									end	end, router:apply(call,SolarSystemID, sov)),  %% all cached soverenity entities in your face!
+							send_callback(VerifiedRecord, {text, jiffy:encode({[
+												{location, get_system_info(SolarSystemID) },{jumped_in, true}]})}),
 							router:apply(cast,SolarSystemID,{update, VerifiedRecord#crest.character_id}),
-							router:apply(cast,VerifiedRecord#crest.location_id,{delete, VerifiedRecord#crest.character_id});
+							router:apply(cast,VerifiedRecord#crest.location_id,{delete, VerifiedRecord#crest.character_id}),
+							_NewVerifiedRecord#crest{jumped_id=SolarSystemID, jumped_name=SolarSystemName};
 						true-> %still in known space. just basic tracking
 							if
 								SolarSystemID == VerifiedRecord#crest.location_id->
 									router:apply(cast,SolarSystemID,{update, VerifiedRecord#crest.character_id});
 								true->
+									send_callback(VerifiedRecord, {text, jiffy:encode({[
+										{location, get_system_info(SolarSystemID)}
+									]})}),
 									router:apply(cast,SolarSystemID,{update, VerifiedRecord#crest.character_id}),
 									router:apply(cast,VerifiedRecord#crest.location_id,{delete, VerifiedRecord#crest.character_id})
-							end
+							end,
+							_NewVerifiedRecord
 					end,
 					loop(NewVerifiedRecord#crest{in_wh=IsWH, location_id=SolarSystemID, location_name=SolarSystemName, last_call=Now});
 				_-> %% unknown location, servers ofline, character logged off
-					loop(NewVerifiedRecord#crest{last_call=Now})
+					loop(_NewVerifiedRecord#crest{last_call=Now})
 			end;
 		true-> %% no time for crest, fast, check erlang messages
 			receive
