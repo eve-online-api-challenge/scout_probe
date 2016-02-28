@@ -34,29 +34,29 @@ dirty_reload(Atom)->
 	code:load_file(Atom).
 
 start(_StartType, _StartArgs) ->
-	%% new version of cowboy have troubes with easy start
-    application:start(ranch),
-    ssl:start(),timer:start(),
-    application:start(cowlib),
-    application:start(cowboy),
-    erlydtl:compile("web/main.html", main_template),
-		inets:start(),
-		crest_cache:start_link(),
-    Dispatch = cowboy_router:compile([
-        {'_', [
-            {"/", cowboy_static, {file, "web/index.html"}}, % beter to use something like nginx for static data
-            {"/js/[...]", cowboy_static, {dir, "web/js"}},
-            {"/img/[...]", cowboy_static, {dir, "web/img"}},
-            {"/owl-carousel/[...]", cowboy_static, {dir, "web/owl-carousel"}},
-            {"/css/[...]", cowboy_static, {dir, "web/css"}},
-            {"/sso", sso_init, []}, %% ss redirect
-            {"/tracker", tracker_handler, []},
-            {"/auth", sso_handler, []} %% post-sso handler
-        ]}
-    ]),
-    cowboy:start_http(probe_http_listener, 100, [{port, 80}],
-        [{env, [{dispatch, Dispatch}]}] %% here should be ssl options. if needed
-    ),
+	%new version of cowboy have troubes with easy start
+  application:start(ranch),
+  ssl:start(),timer:start(),
+  application:start(cowlib),
+  application:start(cowboy),
+  erlydtl:compile("web/main.html", main_template),
+	inets:start(),
+	crest_cache:start_link(),
+  Dispatch = cowboy_router:compile([
+    {'_', [
+        {"/", cowboy_static, {file, "web/index.html"}}, % beter to use something like nginx for static data
+        {"/js/[...]", cowboy_static, {dir, "web/js"}},
+        {"/img/[...]", cowboy_static, {dir, "web/img"}},
+        {"/owl-carousel/[...]", cowboy_static, {dir, "web/owl-carousel"}},
+        {"/css/[...]", cowboy_static, {dir, "web/css"}},
+        {"/sso", sso_init, []}, %% ss redirect
+        {"/tracker", tracker_handler, []},
+        {"/auth", sso_handler, []} %% post-sso handler
+    ]}
+  ]),
+  cowboy:start_http(probe_http_listener, 100, [{port, 80}],
+    [{env, [{dispatch, Dispatch}]}] %% here should be ssl options. if needed
+  ),
     scout_probe_sup:start_link().
 
 stop(_State) ->

@@ -119,7 +119,7 @@ parse_kill(KillMail)->
     },
 	%%io:format("[~p] New Event: ~p~n", [time(),Event]),
   event_pool:add(Event),
-  router:apply(cast,SystemIDStr,{msg,ID,?MSG_START_TTL,0}),
+ 	router:apply(cast,SystemIDStr,{msg,ID,?MSG_START_TTL,0}),
   KillID.
 
 generate_msg(KM)->
