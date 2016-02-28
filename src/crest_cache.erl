@@ -73,9 +73,9 @@ code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
 req(Req)->
-  gen_server:cast(?MODULE, {req,self(),Req}),
+  gen_server:cast(crest_cache, {req,self(),Req}),
   receive
-    Reply->
+    {res, Reply}->
       Reply
   after
     20000 ->
@@ -83,7 +83,7 @@ req(Req)->
   end.
 
 worker(Req, To, [])->
-  To ! pub_crest:req(Req),
+  To ! {res,pub_crest:req(Req)},
   exit(normal);
 worker(Req, To, [{EndPointPath, TablePID, TTL}|State])->
   Matched = (nomatch=/=binary:match(Req,EndPointPath)),
@@ -102,13 +102,13 @@ worker_run(Req, To, TablePID, TTL)->
   case Res of
     []->
       Reply = pub_crest:req(binary_to_list(Req)),
-      To ! Reply,
+      To ! {res,Reply},
       ets:insert(TablePID, {Req, Reply, Now});
     [{Req, Reply, Time}] when TTL > Now-Time->
-      To ! Reply;
+      To ! {res,Reply};
     [{Req, _Reply, _Time}]->
       Reply = pub_crest:req(binary_to_list(Req)),
-      To ! Reply,
+      To ! {res,Reply},
       ets:delete(TablePID,Req),
       ets:insert(TablePID, {Req, Reply, Now})
   end.
