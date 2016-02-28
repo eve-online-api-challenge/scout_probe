@@ -17,7 +17,7 @@
 
 -include("config.hrl").
 
--export([req/1, req/2, init/1, get_variable/1]).
+-export([req/1, req2/1,req2/2, req/2, init/1, get_variable/1]).
 
 -define(CREST_VARIABLES, crest_variables).
 
@@ -43,6 +43,17 @@ get_variable(ID)->
   end.
 
 
+req2(Endpoint)->
+  Res =httpc:request(?PUBLIC_CREST_HOST++Endpoint),
+  case Res of
+  	{ok,{{_,200,_}, _Headers, Body}}->
+  		jiffy:decode(Body, [return_maps]);
+  	{ok,{{_,_Code,_}, _Headers, _Body}}->
+  		#{};
+    {error,_}->
+      #{}
+  end.
+
 req(Endpoint)->
   Res =httpc:request(?PUBLIC_CREST_HOST++Endpoint),
 	case Res of
@@ -54,14 +65,24 @@ req(Endpoint)->
       {[]}
 	end.
 
-req(Endpoint, all)->
-  {Page}=pub_crest:req(Endpoint),
-  NextPage = proplists:get_value(<<"next">>, Page, none),
+  req(Endpoint, all)->
+    {Page}=pub_crest:req(Endpoint),
+    NextPage = proplists:get_value(<<"next">>, Page, none),
+    case NextPage of
+      none->
+        proplists:get_value(<<"items">>, Page, []);
+      {[{<<"href">>, NextPageUrl}]}->
+        req_dirty(binary_to_list(NextPageUrl), all, proplists:get_value(<<"items">>, Page, []))
+    end.
+
+req2(Endpoint, all)->
+  Page=pub_crest:req2(Endpoint),
+  NextPage = maps:get(<<"next">>, Page, none),
   case NextPage of
     none->
-      proplists:get_value(<<"items">>, Page, []);
-    {[{<<"href">>, NextPageUrl}]}->
-      req_dirty(binary_to_list(NextPageUrl), all, proplists:get_value(<<"items">>, Page, []))
+      maps:get(<<"items">>, Page, #{});
+    #{<<"href">> := NextPageUrl}->
+      req_dirty2(binary_to_list(NextPageUrl), all, maps:get(<<"items">>, Page, []))
   end.
 
 req_dirty(Endpoint, all, Acc)->
@@ -75,6 +96,22 @@ req_dirty(Endpoint, all, Acc)->
           Acc++proplists:get_value(<<"items">>, Page, []);
         {[{<<"href">>, NextPageUrl}]}->
           req_dirty(binary_to_list(NextPageUrl), all, Acc++proplists:get_value(<<"items">>, Page, []))
+      end;
+		{ok,{{_,_Code,_}, _Headers, _Body}}->
+		  Acc
+	end.
+
+req_dirty2(Endpoint, all, Acc)->
+  Res =httpc:request(Endpoint),
+	case Res of
+		{ok,{{_,200,_}, _Headers, Body}}->
+      Page=jiffy:decode(Body, [return_maps]),
+      NextPage = maps:get(<<"next">>, Page, none),
+      case NextPage of
+        none->
+          Acc++ maps:get(<<"items">>, Page, []);
+        #{<<"href">> := NextPageUrl}->
+          req_dirty2(binary_to_list(NextPageUrl), all, Acc++maps:get(<<"items">>, Page, []))
       end;
 		{ok,{{_,_Code,_}, _Headers, _Body}}->
 		  Acc

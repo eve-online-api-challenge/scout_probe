@@ -24,7 +24,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
  terminate/2, code_change/3]).
 
--record(sov_state,{alliances=[], capitals=[], events=[], update_counter=1}).
+-record(sov_state,{alliances=#{}, % maps for alliances only now.
+  capitals=#{}, events=[], ids=[], id_max=0, update_counter=1}).
 
 
 %%%===================================================================
@@ -56,12 +57,13 @@ start_link() ->
 %%--------------------------------------------------------------------
 init([]) ->
   timer:send_interval(60000, self(), update),  % might be worst way of updating. check 1 alliance for minute
-  timer:send_interval(30000, self(), update_events),
-  Alliances = [{proplists:get_value(<<"id_str">>,Proplist), proplists:get_value(<<"name">>,Proplist)} ||
-    {Proplist}<-pub_crest:req("/alliances/", all)],
+  timer:send_interval(30*60000, self(), update_events),
+  timer:send_interval(90000, self(), update_alliances),
+  _Alliances =[{ID, Name} ||  #{<<"id_str">> := ID, <<"name">> := Name}<-pub_crest:req2("/alliances/", all)],
+  Alliances = maps:from_list(_Alliances),
   {ok,[CapDump]}=file:consult("sov.dump"), %% get initial sov, gues, no easy way to get capitals of 3000 alliances (even with 150 per sec limmit)
-  {ok, #sov_state{capitals=CapDump, alliances=Alliances}}.
-
+  Keys=maps:keys(Alliances),
+  {ok, #sov_state{capitals=maps:from_list(CapDump), alliances=Alliances, id_max=length(_Alliances), ids=Keys}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -74,9 +76,9 @@ init([]) ->
 
 
 handle_call({get,ID}, _From, State) ->
- _Capital = lists:keyfind(ID,2,State#sov_state.capitals),
+ _Capital = maps:get(ID,State#sov_state.capitals,[]),
  Capital = case _Capital of %% format Capital system info to usable format
-   {AllianceID,CapitalSystemID, CapitalSystemName}->{proplists:get_value(AllianceID,State#sov_state.alliances),AllianceID,CapitalSystemID, CapitalSystemName};
+   #{name := CapitalSystemName, alliance := AllianceID}->{maps:get(AllianceID,State#sov_state.alliances,""),AllianceID,ID, CapitalSystemName};
    _->_Capital
  end,
  Events = lists:foldr(fun({_,SubEvent},{Upcoming,Active})->
@@ -90,7 +92,7 @@ handle_call({get,ID}, _From, State) ->
    end end, {[],[]}, proplists:lookup_all(ID,State#sov_state.events)) ,
  {reply, {Capital,Events}, State};
 handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+  {reply, State, State}.
 
 handle_cast(stop, State) ->
  {stop, normal, State};
@@ -107,22 +109,26 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info(update, State) ->
-  lists:foreach(fun({_AllianceID,CapitalSystemID, _CapitalSystemName})-> router:apply(cast, CapitalSystemID, {sov,CapitalSystemID,2,0}) end,State#sov_state.capitals),
+  spawn_link(fun()->
+      maps:fold(fun(CapitalSystemID, _V,Acc)->
+        router:apply(cast, CapitalSystemID, {sov,CapitalSystemID,2,0}), Acc end,
+      0,State#sov_state.capitals)
+    end),
   Counter = if
-    State#sov_state.update_counter >= length(State#sov_state.alliances)->
+    State#sov_state.update_counter >= State#sov_state.id_max->
       %%io:format("~p| All alliances updated~n",[time()]),
-      file:write_file("sov.dump",io_lib:format("~p.",[State#sov_state.capitals]),[write]),
+      file:write_file("sov.dump",io_lib:format("~p.",[maps:to_list(State#sov_state.capitals)]),[write]),
       1;
     true->
       State#sov_state.update_counter+1
   end,
-  {ID,_Name}=lists:nth(Counter,State#sov_state.alliances),
+  ID=lists:nth(Counter,State#sov_state.ids),
   case get_capital_sytem(ID) of
     undefined->
-      {noreply, State#sov_state{update_counter=Counter, capitals= lists:keydelete(ID,1,State#sov_state.capitals)}};
+      {noreply, State#sov_state{update_counter=Counter, capitals= maps:filter(fun(_,#{alliance := _ID})-> _ID/=ID end,State#sov_state.capitals)}};
     {SysID, Name}->
       router:apply(cast,SysID,{sov,SysID,2,0}),  % post ref link to sov in system
-      {noreply, State#sov_state{update_counter=Counter, capitals= lists:keydelete(ID,1,State#sov_state.capitals)++[{ID, SysID, Name}]}}
+      {noreply, State#sov_state{update_counter=Counter, capitals= maps:put(SysID,#{name => Name, alliance => ID},State#sov_state.capitals)}}
   end;
 handle_info(update_events, State) ->
   NewEvents = lists:map(fun({Proplist})->
@@ -132,10 +138,14 @@ handle_info(update_events, State) ->
     {ID, Proplist}
   end, pub_crest:req("/sovereignty/campaigns/", all)), %% get all events, parse them and send to routers
   {noreply, State#sov_state{events=NewEvents}};
+handle_info(update_alliances, State) ->
+  Alliances = maps:from_list([{ID, Name} ||  #{<<"id_str">> := ID, <<"name">> := Name}<-pub_crest:req2("/alliances/", all)]),
+  Keys=maps:keys(Alliances),
+  {noreply, State#sov_state{ alliances=Alliances, id_max=length(Keys), ids=Keys}};
 handle_info(_Info, State) ->
   {noreply, State}.
 
-%%--------------------------------------------------------------------
+%--------------------------------------------------------------------
 %% @private
 %% @doc
 %% Get info about alliance capital system
@@ -145,14 +155,14 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 get_capital_sytem(ID)->
-  {Proplist}=pub_crest:req(io_lib:format("/alliances/~s/",[ID])),
-  CapitalSystem= element(1,proplists:get_value(<<"capitalSystem">>,Proplist,{[]})),
-  IDStr= proplists:get_value(<<"id_str">> ,CapitalSystem),
+  Proplist=pub_crest:req2(io_lib:format("/alliances/~s/",[ID])),
+  CapitalSystem= maps:get(<<"capitalSystem">>,Proplist,#{}),
+  IDStr= maps:get(<<"id_str">> ,CapitalSystem,undefined),
   case IDStr of
     undefined->
       undefined;
     _->
-      {IDStr, proplists:get_value(<<"name">> ,CapitalSystem)}
+      {IDStr, maps:get(<<"name">> ,CapitalSystem)}
   end.
 
 terminate(_Reason, _State) ->
