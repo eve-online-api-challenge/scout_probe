@@ -61,9 +61,9 @@ function connect()
         $('#location').attr("href", "http://evemaps.dotlan.net/system/"+o.location.name);
       }
       if (o.jumped_in) {
-        $('#start_point').text(o.jumped_in.name);
-        $('#start_point').attr("href", "http://evemaps.dotlan.net/system/"+o.jumped_in.name);
-        $('#start_point_w').html("<a onclick=\"websocket.send('D:"+o.jumped_in.id_str+"');\" >Set Destination</a> | <a onclick=\"websocket.send('W:"+o.jumped_in.id_str+"');\" >Set Waypoint</a>");
+        $('#start_point').text(o.location.name);
+        $('#start_point').attr("href", "http://evemaps.dotlan.net/system/"+o.location.name);
+        $('#start_point_w').html("<a onclick=\"websocket.send('D:"+o.location.id_str+"');\" >Set Destination</a> | <a onclick=\"websocket.send('W:"+o.location.id_str+"');\" >Set Waypoint</a>");
       }
       if (o.msg_type==0) {
         if ($('#events > tbody>tr').length >=15) {
