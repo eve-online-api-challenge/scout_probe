@@ -66,12 +66,12 @@ to_sso(Req,Opts)->
 websocket_handle({text, <<"and">>}, Req, [TrackerID]) ->
   tracker:update(TrackerID),
   {tracker,VerifiedRecord} = tracker:get(TrackerID),
-  lists:foreach(fun({ID,_Time})->
+  lists:foreach(fun(ID)->
     EventList = gen_server:call(sov,{get,ID}),
     case EventList of
       {Capital, {Upcoming,Active}}->
         Cap = case Capital of
-          false->
+          []->
             [];
           {AllianceName,AllianceID,CapitalSystemID, CapitalSystemName}->
             [{capital_alliance, AllianceID},{capital_alliance_name, AllianceName},{capital_id, CapitalSystemID},{capital_name, CapitalSystemName}]

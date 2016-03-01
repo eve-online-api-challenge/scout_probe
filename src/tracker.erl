@@ -66,7 +66,7 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 									_NewVerifiedRecord
 							end;
 						IsWH=/=VerifiedRecord#crest.in_wh-> % jumped out wh. or just logged on. throw tons of events in this face!
-							lists:foreach(fun({ID,_Time})->
+							lists:foreach(fun(ID)->
 								EventList = event_pool:get(ID),
 								case EventList of
 									[]->
@@ -80,12 +80,12 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 											{system, get_system_info(Event#event.system)} %% todo - use sqlite
 										]})})
 								end	end, router:apply(call,SolarSystemID, events)), %% all cached killmails in your face!
-								lists:foreach(fun({ID,_Time})->
+								lists:foreach(fun(ID)->
 									EventList = gen_server:call(sov,{get,ID}),
 									case EventList of
 										{Capital, {Upcoming,Active}}->
 											Cap = case Capital of
-												false->
+												[]->
 													[];
 												{AllianceName,AllianceID,CapitalSystemID, CapitalSystemName}->
 													[{capital_alliance, AllianceID},{capital_alliance_name, AllianceName},{capital_id, CapitalSystemID},{capital_name, CapitalSystemName}]
@@ -140,7 +140,7 @@ loop(#crest{}=VerifiedRecord)-> %% main loop
 					case EventList of
 						{Capital, {Upcoming,Active}}->
 							Cap = case Capital of
-								false->
+								[]->
 									[];
 								{AllianceName,AllianceID,CapitalSystemID, CapitalSystemName}->
 									[{capital_alliance, AllianceID},{capital_alliance_name, AllianceName},{capital_id, CapitalSystemID},{capital_name, CapitalSystemName}]

@@ -88,7 +88,9 @@ req(#crest{}=Crest, get, _URL, _)-> % few error to catch. but if there is no con
 		{ok,{{_,401,_}, _Headers, _Body}}->
 			req(update_token(Crest),get,URL,[]);
 		{ok,{{_,Code,_}, _Headers, _Body}}->
-			{Crest,{Code,_Body}}
+			{Crest,{Code,_Body}};
+		_->
+			{Crest,{[]}}
 	end;
 req(#crest{}=Crest, Method, _URL, ReqBody)-> % req to private crst. few error to catch. but if there is no conection etc. - let it crash.
 	URL = lists:flatten(_URL),
@@ -111,7 +113,9 @@ req(#crest{}=Crest, Method, _URL, ReqBody)-> % req to private crst. few error to
 	{ok,{{_,401,_}, _Headers, _Body}}->
 		req(update_token(Crest),Method,URL,ReqBody);
 	{ok,{{_,Code,_}, _Headers, _Body}}->
-		{Crest,{Code,_Body}}
+		{Crest,{Code,_Body}};
+	_->
+		{Crest,{[]}}
 	end.
 
 %%--------------------------------------------------------------------

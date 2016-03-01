@@ -17,14 +17,14 @@
 
 -include("config.hrl").
 
--export([start_link/1, apply/3]).
+-export([start_link/1, apply/3, send_worker/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
  terminate/2, code_change/3]).
 
 -behaviour(gen_server).
--record(router_state,{id, connected=[], nodes=[], sov=[], messages=[], last_check=?SEC}).
+-record(router_state,{id, connected=[], nodes=[], sov=#{}, messages=#{}, last_check=?SEC}). % nodes are lists coz alot of map and foreach call for them. sov and messages ganged to maps, there much less map calls, and more put/get calls.
 
 
 %%--------------------------------------------------------------------
@@ -75,9 +75,9 @@ init([ID]) ->
 
 
 handle_call(events, _From, State) ->
-  {reply, State#router_state.messages, State};
+  {reply, maps:keys(State#router_state.messages), State};
 handle_call(sov, _From, State) ->
-  {reply, State#router_state.sov, State};
+  {reply, maps:keys(State#router_state.sov), State};
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -93,54 +93,47 @@ handle_call(_Request, _From, State) ->
 %%--------------------------------------------------------------------
 
 handle_cast({msg,EventID,0,_From}, State) -> % there only 2 types of msg. noneed to use record to tuplelist transfom
-  Duplicated = proplists:get_value(EventID,State#router_state.messages),
-  case Duplicated of
-    undefined->
-      lists:foreach(fun({User,_})->tracker:send(User,{event,EventID}) end, State#router_state.nodes),
-      {noreply, State#router_state{ messages=State#router_state.messages++[{EventID,?SEC}]}};
+  case maps:find(EventID,State#router_state.messages) of
+    error->
+      spawn_worker(fun({User,_})->tracker:send(User,{event,EventID}) end, State#router_state.nodes);
     _->
-      {noreply, State#router_state{ messages=proplists:delete(EventID,State#router_state.messages)++[{EventID,?SEC}]}}
-  end;
+      ok
+  end,
+  {noreply, State#router_state{ messages=maps:put(EventID,?SEC,State#router_state.messages)}};
+
 handle_cast({sov,EventID,0,_From}, State) -> % mostly same as previous function. got Message with TTl = 0, send to your nodes and dont broadcast to other routers
-    Duplicated = proplists:get_value(EventID,State#router_state.sov),
-    case Duplicated of
-      undefined->
-        lists:foreach(fun({User,_})->tracker:send(User,{sov,EventID}) end, State#router_state.nodes),
-        {noreply, State#router_state{ sov=State#router_state.sov++[{EventID,?SEC}]}};
-      _->
-        {noreply, State#router_state{ sov=proplists:delete(EventID,State#router_state.sov)++[{EventID,?SEC}]}}
-    end;
+  case maps:find(EventID,State#router_state.sov) of
+    error->
+      spawn_worker(fun({User,_})->tracker:send(User,{sov,EventID}) end, State#router_state.nodes);
+    _->ok
+  end,
+  {noreply, State#router_state{ sov=maps:put(EventID,?SEC,State#router_state.sov)}};
 
-handle_cast({msg,EventID,TTL,From}, State) -> % handle foor msg with no-zero ttl.
-  Duplicated = proplists:get_value(EventID,State#router_state.messages),
-  case Duplicated of
-    undefined->
+handle_cast({msg,EventID,TTL,From}, State) -> % handler for msg with no-zero ttl.
+  case maps:find(EventID,State#router_state.messages) of
+    error->
       NewTTL= TTL-1,
-      NextStep = lists:filter(fun(X)-> X=/=From end, State#router_state.connected), %% dont send msg to router you recived it from
-   	  lists:foreach(fun(ID)->
-      router:apply(cast,ID, {msg,EventID,NewTTL,State#router_state.id}) end,
-        NextStep
-      ),
-      lists:foreach(fun({User,_})-> tracker:send(User,{event,EventID}) end, State#router_state.nodes),
-      {noreply, State#router_state{ messages=State#router_state.messages++[{EventID,?SEC}]}};
-    Duplicated->
-      {noreply, State#router_state{ messages=proplists:delete(EventID,State#router_state.messages)++[{EventID,?SEC}]}}
-  end;
-handle_cast({sov,EventID,TTL,From}, State) -> %% save as fun before but for sov
-    Duplicated = proplists:get_value(EventID,State#router_state.sov),
-    case Duplicated of
-      undefined->
-        NewTTL= TTL-1,
-        NextStep = lists:filter(fun(X)-> X=/=From end, State#router_state.connected),
+   	  spawn_worker(fun(ID)->
+        router:apply(cast,ID, {msg,EventID,NewTTL,State#router_state.id}) end,
+      lists:delete(From, State#router_state.connected)), %% dont send msg to router you recived it from
+      spawn_worker(fun({User,_})-> tracker:send(User,{event,EventID}) end, State#router_state.nodes);
+    _->
+      ok
+  end,
+  {noreply, State#router_state{ messages=maps:put(EventID,?SEC,State#router_state.messages)}};
 
-     	  lists:foreach(fun(ID)->
-        router:apply(cast,ID, {sov,EventID,NewTTL,State#router_state.id}) end,
-          NextStep
-        ),
-        {noreply, State#router_state{ sov=State#router_state.sov++[{EventID,?SEC}]}};
-      _->
-        {noreply, State#router_state{ sov=proplists:delete(EventID,State#router_state.sov)++[{EventID,?SEC}]}}
-    end;
+handle_cast({sov,EventID,TTL,From}, State) -> %% same as fun before but for sov
+  case maps:find(EventID,State#router_state.sov) of
+    error->
+      NewTTL= TTL-1,
+   	  spawn_worker(fun(ID)->
+      router:apply(cast,ID, {sov,EventID,NewTTL,State#router_state.id}) end,
+          lists:delete(From, State#router_state.connected)); %% dont send msg to router you recived it from
+      %% users get sov update on ws timeout, noneed to broadcast sov messages. just stor them
+    _->
+      ok
+  end,
+  {noreply, State#router_state{ sov=maps:put(EventID,?SEC,State#router_state.sov)}};
 
 
 handle_cast(stop, State) ->
@@ -159,7 +152,11 @@ handle_cast(clear, State) ->
   	abs(M-State#router_state.last_check ) < ?MSG_RECORDS_TTL->
   		{noreply, State};
   	true->
-  		{noreply, State#router_state{ sov= lists:filter(fun({_ID,_M})-> M-_M< ?SOV_RECORDS_TTL end,State#router_state.sov), messages= lists:filter(fun({_ID,_M})-> M-_M< ?MSG_RECORDS_TTL end,State#router_state.messages), nodes=lists:filter(fun({_ID,_M})-> M-_M< ?MAX_DIF end,State#router_state.nodes),last_check=M }}
+  		{noreply, State#router_state{ sov= maps:filter(fun(_ID,_M)-> M-_M< ?SOV_RECORDS_TTL end, State#router_state.sov),
+        messages= maps:filter(fun(_ID,_M)-> M-_M< ?MSG_RECORDS_TTL end, State#router_state.messages),
+        nodes=lists:filter(fun({_ID,_M})-> M-_M< ?MAX_DIF end, State#router_state.nodes),
+        last_check=M }
+      }
   end;
 handle_cast({update,ID},State)->
   %%io:format("~p found in ~p~n",[ID, State#router_state.id]),
@@ -169,6 +166,12 @@ handle_cast({delete,ID},State)->
   {noreply,  State#router_state{ nodes= lists:keydelete(ID,1,State#router_state.nodes)}};
 handle_cast(_Msg, State) ->
   {noreply, State}.
+
+spawn_worker(Fun,List)->
+  spawn_link(?MODULE,send_worker,[Fun,List]).
+send_worker(Fun,List)->
+  lists:foreach(Fun,List),
+  exit(normal).
 
 %%--------------------------------------------------------------------
 %% @private
